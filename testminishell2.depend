@@ -1,0 +1,9 @@
+# depslib dependency file v1.0
+1730308885 source:/home/bala/projet_c++/testminishell2/main.c
+	<string.h>
+	<stdlib.h>
+	<stdio.h>
+	<unistd.h>
+	<sys/types.h>
+	<sys/wait.h>
+
