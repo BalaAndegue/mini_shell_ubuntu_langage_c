@@ -5,6 +5,7 @@
 #include <unistd.h>
 
 #include "executor.h"
+#include "../builtins/builtins.h"
 
 static int run_external(char **argv, int argc)
 {
@@ -33,8 +34,11 @@ static int run_external(char **argv, int argc)
 
 int execute(char **argv, int argc, t_shell *sh)
 {
-    (void)sh;
     if (argc == 0 || argv[0] == NULL)
         return 0;
+
+    if (is_builtin(argv[0]))
+        return exec_builtin(argv, argc, sh);
+
     return run_external(argv, argc);
 }
