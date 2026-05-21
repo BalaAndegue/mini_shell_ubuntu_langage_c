@@ -1,8 +1,52 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "builtins.h"
+
+typedef struct {
+    const char *name;
+    int (*fn)(char **, int, t_shell *);
+} t_builtin_entry;
+
+static int dispatch_cd(char **argv, int argc, t_shell *sh);
+static int dispatch_exit(char **argv, int argc, t_shell *sh);
+
+static const t_builtin_entry builtins_table[] = {
+    { "cd",   dispatch_cd   },
+    { "exit", dispatch_exit },
+    { NULL, NULL }
+};
+
+static int dispatch_cd(char **argv, int argc, t_shell *sh)
+{
+    (void)sh;
+    return builtin_cd(argv, argc);
+}
+
+static int dispatch_exit(char **argv, int argc, t_shell *sh)
+{
+    return builtin_exit(argv, argc, sh);
+}
+
+int is_builtin(const char *cmd)
+{
+    for (int i = 0; builtins_table[i].name; i++) {
+        if (strcmp(builtins_table[i].name, cmd) == 0)
+            return 1;
+    }
+    return 0;
+}
+
+int exec_builtin(char **argv, int argc, t_shell *sh)
+{
+    for (int i = 0; builtins_table[i].name; i++) {
+        if (strcmp(builtins_table[i].name, argv[0]) == 0)
+            return builtins_table[i].fn(argv, argc, sh);
+    }
+    return 127;
+}
 
 int builtin_cd(char **argv, int argc)
 {
