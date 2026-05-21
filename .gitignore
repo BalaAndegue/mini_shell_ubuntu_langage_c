@@ -1,0 +1,49 @@
+# Claude Code internal files
+.claude/
+
+# Build artifacts
+build/
+*.o
+*.d
+*.a
+*.so
+*.dylib
+
+# Binaries
+minishell
+main
+shellexe
+testminishell2
+
+# Legacy Code::Blocks artifacts
+bin/
+obj/
+*.depend
+*.layout
+*.cbp
+
+# Coverage
+*.gcda
+*.gcno
+*.gcov
+cov.info
+cov_html/
+
+# Valgrind
+vgcore.*
+
+# Doxygen
+docs/html/
+docs/latex/
+
+# Editor & OS
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Compile commands (can be regenerated)
+compile_commands.json
