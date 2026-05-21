@@ -240,14 +240,14 @@ make debug
 make re
 ```
 
-Binary is output to `build/bin/minishell`.
+Binary is output to `build/release/bin/minishell`.
 
 ---
 
 ## Usage
 
 ```bash
-./build/bin/minishell
+./build/release/bin/minishell
 ```
 
 ```
