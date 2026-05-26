@@ -10,6 +10,10 @@ int builtin_pwd(char **argv, int argc);
 int builtin_env(char **argv, int argc, t_shell *sh);
 int builtin_export(char **argv, int argc, t_shell *sh);
 int builtin_unset(char **argv, int argc, t_shell *sh);
+int builtin_true(char **argv, int argc, t_shell *sh);
+int builtin_false(char **argv, int argc, t_shell *sh);
+int builtin_type(char **argv, int argc, t_shell *sh);
+int builtin_help(char **argv, int argc, t_shell *sh);
 
 int is_builtin(const char *cmd);
 int exec_builtin(char **argv, int argc, t_shell *sh);

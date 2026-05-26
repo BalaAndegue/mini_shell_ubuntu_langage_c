@@ -11,11 +11,14 @@
 #define MAX_ARGS       128
 
 typedef struct s_shell {
-    char  *prompt;
+    char  *prompt;        /* static fallback prompt string */
+    char  *ps1;           /* PS1 format string (NULL → use default) */
     int    last_status;
     int    running;
     char **env;           /* NULL-terminated copy of the environment */
 } t_shell;
+
+char *prompt_build(t_shell *sh);
 
 /* env helpers */
 char  **env_copy(char **envp);

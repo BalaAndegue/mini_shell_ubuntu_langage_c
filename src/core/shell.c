@@ -13,6 +13,7 @@
 #include "../executor/executor.h"
 #include "../executor/pipeline.h"
 #include "../expand/expand.h"
+#include "../expand/glob.h"
 
 static void history_load(void)
 {
@@ -38,22 +39,23 @@ static void history_save(void)
 
 static char *read_line(t_shell *sh, int interactive)
 {
+    char *prompt = interactive ? prompt_build(sh) : NULL;
+
 #ifdef HAVE_READLINE
     if (interactive) {
-        char *line = readline(sh->prompt);
+        char *line = readline(prompt ? prompt : sh->prompt);
+        free(prompt);
         if (line && *line)
             add_history(line);
         return line;
     }
-#else
-    (void)sh;
 #endif
     char *buf = malloc(BUFF_SIZE);
-    if (!buf)
-        return NULL;
+    if (!buf) { free(prompt); return NULL; }
     if (interactive) {
-        printf("%s", sh->prompt);
+        printf("%s", prompt ? prompt : sh->prompt);
         fflush(stdout);
+        free(prompt);
     }
     if (!fgets(buf, BUFF_SIZE, stdin)) {
         free(buf);
@@ -80,25 +82,46 @@ void shell_run(t_shell *sh)
             break;
         }
 
-        t_cmd *cmds = parse_line(line);
-        free(line);
+        /* split on ';' outside quotes, run each segment as a pipeline */
+        char *p   = line;
+        char *seg = line;
 
-        if (!cmds)
-            continue;
+        while (1) {
+            /* advance past quoted regions so we don't split on ; inside quotes */
+            if (*p == '\'' || *p == '"') {
+                char q = *p++;
+                while (*p && *p != q) p++;
+                if (*p) p++;
+                continue;
+            }
+            if (*p == ';' || *p == '\0') {
+                int at_end = (*p == '\0');
+                *p = '\0';      /* NUL-terminate this segment */
 
-        /* expand $VAR, $?, $$ — replace each argv[i] in-place (free old) */
-        for (t_cmd *c = cmds; c; c = c->next) {
-            for (int i = 0; i < c->argc; i++) {
-                char *ex = expand_token(c->argv[i], sh);
-                if (ex) {
-                    free(c->argv[i]);
-                    c->argv[i] = ex;
+                /* skip leading whitespace */
+                while (*seg == ' ' || *seg == '\t') seg++;
+
+                if (*seg != '\0') {
+                    t_cmd *cmds = parse_line(seg);
+                    if (cmds) {
+                        for (t_cmd *c = cmds; c; c = c->next) {
+                            for (int i = 0; i < c->argc; i++) {
+                                char *ex = expand_token(c->argv[i], sh);
+                                if (ex) { free(c->argv[i]); c->argv[i] = ex; }
+                            }
+                            expand_globs(c);
+                        }
+                        sh->last_status = execute_pipeline(cmds, sh);
+                        cmd_free(cmds);
+                    }
                 }
+                if (at_end)
+                    break;
+                seg = ++p;
+            } else {
+                p++;
             }
         }
-
-        sh->last_status = execute_pipeline(cmds, sh);
-
-        cmd_free(cmds);
+        free(line);
     }
 }
