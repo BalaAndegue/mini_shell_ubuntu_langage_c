@@ -12,6 +12,7 @@
 #include "../parser/parser.h"
 #include "../executor/executor.h"
 #include "../executor/pipeline.h"
+#include "../executor/heredoc.h"
 #include "../expand/expand.h"
 #include "../expand/glob.h"
 
@@ -104,6 +105,13 @@ void shell_run(t_shell *sh)
                 if (*seg != '\0') {
                     t_cmd *cmds = parse_line(seg);
                     if (cmds) {
+                        /* pre-collect heredocs before forking */
+                        for (t_cmd *c = cmds; c; c = c->next) {
+                            for (t_redir *r = c->redirs; r; r = r->next) {
+                                if (r->type == REDIR_HEREDOC && r->fd < 0)
+                                    r->fd = heredoc_collect(r->file, sh);
+                            }
+                        }
                         for (t_cmd *c = cmds; c; c = c->next) {
                             for (int i = 0; i < c->argc; i++) {
                                 char *ex = expand_token(c->argv[i], sh);

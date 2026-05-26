@@ -43,7 +43,12 @@ int apply_redirs(t_redir *redirs)
             break;
 
         case REDIR_HEREDOC:
-            /* heredoc handled upstream; skip here */
+            /* fd was pre-filled by heredoc_collect() */
+            if (r->fd >= 0) {
+                if (dup2(r->fd, STDIN_FILENO) < 0) { perror("dup2"); return -1; }
+                close(r->fd);
+                r->fd = -1;
+            }
             break;
         }
     }

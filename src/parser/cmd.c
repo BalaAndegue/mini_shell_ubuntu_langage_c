@@ -15,6 +15,7 @@ t_redir *redir_new(t_redir_type type, char *file)
         return NULL;
     r->type = type;
     r->file = file;
+    r->fd   = -1;
     return r;
 }
 
