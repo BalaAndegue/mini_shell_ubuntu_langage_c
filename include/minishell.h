@@ -12,8 +12,16 @@
 
 typedef struct s_shell {
     char  *prompt;
-    int    last_status;   /* $? — exit status of last command */
+    int    last_status;
     int    running;
+    char **env;           /* NULL-terminated copy of the environment */
 } t_shell;
+
+/* env helpers */
+char  **env_copy(char **envp);
+void    env_free(char **env);
+char   *env_get(char **env, const char *name);
+int     env_set(char ***env, const char *name, const char *value);
+int     env_unset(char ***env, const char *name);
 
 #endif /* MINISHELL_H */

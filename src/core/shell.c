@@ -9,7 +9,32 @@
 
 #include "shell.h"
 #include "../lexer/lexer.h"
+#include "../parser/parser.h"
 #include "../executor/executor.h"
+#include "../executor/pipeline.h"
+#include "../expand/expand.h"
+
+static void history_load(void)
+{
+#ifdef HAVE_READLINE
+    const char *home = getenv("HOME");
+    if (!home) return;
+    char path[512];
+    snprintf(path, sizeof(path), "%s/.minishell_history", home);
+    read_history(path);
+#endif
+}
+
+static void history_save(void)
+{
+#ifdef HAVE_READLINE
+    const char *home = getenv("HOME");
+    if (!home) return;
+    char path[512];
+    snprintf(path, sizeof(path), "%s/.minishell_history", home);
+    write_history(path);
+#endif
+}
 
 static char *read_line(t_shell *sh, int interactive)
 {
@@ -40,24 +65,40 @@ static char *read_line(t_shell *sh, int interactive)
 
 void shell_run(t_shell *sh)
 {
-    char *argv[MAX_ARGS + 1];
-    int   interactive = isatty(STDIN_FILENO);
+    int interactive = isatty(STDIN_FILENO);
+
+    if (interactive)
+        history_load();
 
     while (sh->running) {
         char *line = read_line(sh, interactive);
         if (!line) {
-            if (interactive)
+            if (interactive) {
                 fprintf(stderr, "\nexit\n");
+                history_save();
+            }
             break;
         }
 
-        int argc = tokenize(line, argv, MAX_ARGS);
-        if (argc == 0) {
-            free(line);
+        t_cmd *cmds = parse_line(line);
+        free(line);
+
+        if (!cmds)
             continue;
+
+        /* expand $VAR, $?, $$ — replace each argv[i] in-place (free old) */
+        for (t_cmd *c = cmds; c; c = c->next) {
+            for (int i = 0; i < c->argc; i++) {
+                char *ex = expand_token(c->argv[i], sh);
+                if (ex) {
+                    free(c->argv[i]);
+                    c->argv[i] = ex;
+                }
+            }
         }
 
-        sh->last_status = execute(argv, argc, sh);
-        free(line);
+        sh->last_status = execute_pipeline(cmds, sh);
+
+        cmd_free(cmds);
     }
 }
