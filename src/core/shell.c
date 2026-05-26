@@ -14,6 +14,28 @@
 #include "../executor/pipeline.h"
 #include "../expand/expand.h"
 
+static void history_load(void)
+{
+#ifdef HAVE_READLINE
+    const char *home = getenv("HOME");
+    if (!home) return;
+    char path[512];
+    snprintf(path, sizeof(path), "%s/.minishell_history", home);
+    read_history(path);
+#endif
+}
+
+static void history_save(void)
+{
+#ifdef HAVE_READLINE
+    const char *home = getenv("HOME");
+    if (!home) return;
+    char path[512];
+    snprintf(path, sizeof(path), "%s/.minishell_history", home);
+    write_history(path);
+#endif
+}
+
 static char *read_line(t_shell *sh, int interactive)
 {
 #ifdef HAVE_READLINE
@@ -45,11 +67,16 @@ void shell_run(t_shell *sh)
 {
     int interactive = isatty(STDIN_FILENO);
 
+    if (interactive)
+        history_load();
+
     while (sh->running) {
         char *line = read_line(sh, interactive);
         if (!line) {
-            if (interactive)
+            if (interactive) {
                 fprintf(stderr, "\nexit\n");
+                history_save();
+            }
             break;
         }
 
