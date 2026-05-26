@@ -7,7 +7,7 @@
 #include "executor.h"
 #include "../builtins/builtins.h"
 
-static int run_external(char **argv, int argc)
+static int run_external(char **argv, int argc, t_shell *sh)
 {
     (void)argc;
     pid_t pid = fork();
@@ -16,6 +16,8 @@ static int run_external(char **argv, int argc)
         return 1;
     }
     if (pid == 0) {
+        execve(argv[0], argv, sh->env);
+        /* fallback: search PATH */
         execvp(argv[0], argv);
         perror(argv[0]);
         exit(127);
@@ -40,5 +42,5 @@ int execute(char **argv, int argc, t_shell *sh)
     if (is_builtin(argv[0]))
         return exec_builtin(argv, argc, sh);
 
-    return run_external(argv, argc);
+    return run_external(argv, argc, sh);
 }

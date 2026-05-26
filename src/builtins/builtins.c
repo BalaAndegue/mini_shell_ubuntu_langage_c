@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 #include "builtins.h"
+#include "../../include/minishell.h"
 
 typedef struct {
     const char *name;
@@ -14,12 +15,18 @@ static int dispatch_cd(char **argv, int argc, t_shell *sh);
 static int dispatch_exit(char **argv, int argc, t_shell *sh);
 static int dispatch_echo(char **argv, int argc, t_shell *sh);
 static int dispatch_pwd(char **argv, int argc, t_shell *sh);
+static int dispatch_env(char **argv, int argc, t_shell *sh);
+static int dispatch_export(char **argv, int argc, t_shell *sh);
+static int dispatch_unset(char **argv, int argc, t_shell *sh);
 
 static const t_builtin_entry builtins_table[] = {
-    { "cd",   dispatch_cd   },
-    { "exit", dispatch_exit },
-    { "echo", dispatch_echo },
-    { "pwd",  dispatch_pwd  },
+    { "cd",     dispatch_cd     },
+    { "exit",   dispatch_exit   },
+    { "echo",   dispatch_echo   },
+    { "pwd",    dispatch_pwd    },
+    { "env",    dispatch_env    },
+    { "export", dispatch_export },
+    { "unset",  dispatch_unset  },
     { NULL, NULL }
 };
 
@@ -44,6 +51,21 @@ static int dispatch_pwd(char **argv, int argc, t_shell *sh)
 {
     (void)sh;
     return builtin_pwd(argv, argc);
+}
+
+static int dispatch_env(char **argv, int argc, t_shell *sh)
+{
+    return builtin_env(argv, argc, sh);
+}
+
+static int dispatch_export(char **argv, int argc, t_shell *sh)
+{
+    return builtin_export(argv, argc, sh);
+}
+
+static int dispatch_unset(char **argv, int argc, t_shell *sh)
+{
+    return builtin_unset(argv, argc, sh);
 }
 
 int is_builtin(const char *cmd)
@@ -115,5 +137,50 @@ int builtin_pwd(char **argv, int argc)
         return 1;
     }
     puts(buf);
+    return 0;
+}
+
+int builtin_env(char **argv, int argc, t_shell *sh)
+{
+    (void)argv;
+    (void)argc;
+    if (!sh->env)
+        return 0;
+    for (int i = 0; sh->env[i]; i++)
+        puts(sh->env[i]);
+    return 0;
+}
+
+int builtin_export(char **argv, int argc, t_shell *sh)
+{
+    if (argc < 2) {
+        return builtin_env(argv, argc, sh);
+    }
+    for (int i = 1; i < argc; i++) {
+        char *eq = strchr(argv[i], '=');
+        if (!eq) {
+            /* export VAR without value: make it visible but unchanged */
+            continue;
+        }
+        char name[256];
+        size_t nlen = (size_t)(eq - argv[i]);
+        if (nlen >= sizeof(name)) {
+            fprintf(stderr, "export: name too long\n");
+            return 1;
+        }
+        memcpy(name, argv[i], nlen);
+        name[nlen] = '\0';
+        if (env_set(&sh->env, name, eq + 1) != 0) {
+            perror("export");
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int builtin_unset(char **argv, int argc, t_shell *sh)
+{
+    for (int i = 1; i < argc; i++)
+        env_unset(&sh->env, argv[i]);
     return 0;
 }
