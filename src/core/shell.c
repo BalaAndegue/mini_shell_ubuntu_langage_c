@@ -13,6 +13,7 @@
 #include "../executor/executor.h"
 #include "../executor/pipeline.h"
 #include "../expand/expand.h"
+#include "../expand/glob.h"
 
 static void history_load(void)
 {
@@ -107,6 +108,7 @@ void shell_run(t_shell *sh)
                                 char *ex = expand_token(c->argv[i], sh);
                                 if (ex) { free(c->argv[i]); c->argv[i] = ex; }
                             }
+                            expand_globs(c);
                         }
                         sh->last_status = execute_pipeline(cmds, sh);
                         cmd_free(cmds);
