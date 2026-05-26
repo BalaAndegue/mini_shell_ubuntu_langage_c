@@ -45,10 +45,13 @@ OBJDIR := build/$(BUILD_TYPE)/obj
 BINDIR := build/$(BUILD_TYPE)/bin
 DEPDIR := build/$(BUILD_TYPE)/dep
 
-CFLAGS := $(BASE_CFLAGS) $(EXTRA_CFLAGS)
+CFLAGS := $(BASE_CFLAGS) $(EXTRA_CFLAGS) $(HAVE_READLINE) $(READLINE_CFLAGS)
 OBJS   := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(SRCS))
 DEPS   := $(patsubst $(SRCDIR)/%.c,$(DEPDIR)/%.d,$(SRCS))
-LDLIBS := $(shell pkg-config --libs readline 2>/dev/null || echo "")
+READLINE_CFLAGS := $(shell pkg-config --cflags readline 2>/dev/null)
+READLINE_LIBS   := $(shell pkg-config --libs   readline 2>/dev/null)
+HAVE_READLINE   := $(shell pkg-config readline 2>/dev/null && echo "-DHAVE_READLINE")
+LDLIBS          := $(READLINE_LIBS)
 
 .PHONY: _build
 _build: $(BINDIR)/$(NAME)
