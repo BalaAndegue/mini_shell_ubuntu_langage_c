@@ -12,10 +12,14 @@ typedef struct {
 
 static int dispatch_cd(char **argv, int argc, t_shell *sh);
 static int dispatch_exit(char **argv, int argc, t_shell *sh);
+static int dispatch_echo(char **argv, int argc, t_shell *sh);
+static int dispatch_pwd(char **argv, int argc, t_shell *sh);
 
 static const t_builtin_entry builtins_table[] = {
     { "cd",   dispatch_cd   },
     { "exit", dispatch_exit },
+    { "echo", dispatch_echo },
+    { "pwd",  dispatch_pwd  },
     { NULL, NULL }
 };
 
@@ -28,6 +32,18 @@ static int dispatch_cd(char **argv, int argc, t_shell *sh)
 static int dispatch_exit(char **argv, int argc, t_shell *sh)
 {
     return builtin_exit(argv, argc, sh);
+}
+
+static int dispatch_echo(char **argv, int argc, t_shell *sh)
+{
+    (void)sh;
+    return builtin_echo(argv, argc);
+}
+
+static int dispatch_pwd(char **argv, int argc, t_shell *sh)
+{
+    (void)sh;
+    return builtin_pwd(argv, argc);
 }
 
 int is_builtin(const char *cmd)
@@ -68,4 +84,36 @@ int builtin_exit(char **argv, int argc, t_shell *sh)
         code = atoi(argv[1]);
     fprintf(stderr, "exit\n");
     exit(code);
+}
+
+int builtin_echo(char **argv, int argc)
+{
+    int newline = 1;
+    int start   = 1;
+
+    if (argc >= 2 && strcmp(argv[1], "-n") == 0) {
+        newline = 0;
+        start   = 2;
+    }
+    for (int i = start; i < argc; i++) {
+        if (i > start)
+            putchar(' ');
+        fputs(argv[i], stdout);
+    }
+    if (newline)
+        putchar('\n');
+    return 0;
+}
+
+int builtin_pwd(char **argv, int argc)
+{
+    (void)argv;
+    (void)argc;
+    char buf[4096];
+    if (!getcwd(buf, sizeof(buf))) {
+        perror("pwd");
+        return 1;
+    }
+    puts(buf);
+    return 0;
 }

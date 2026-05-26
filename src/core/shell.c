@@ -52,10 +52,12 @@ void shell_run(t_shell *sh)
         }
 
         int argc = tokenize(line, argv, MAX_ARGS);
-        free(line);
-        if (argc == 0)
+        if (argc == 0) {
+            free(line);
             continue;
+        }
 
         sh->last_status = execute(argv, argc, sh);
+        free(line);
     }
 }
