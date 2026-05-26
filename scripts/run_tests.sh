@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-SHELL_BIN="./build/bin/minishell"
+SHELL_BIN="./build/release/bin/minishell"
 TEST_DIR="tests/integration"
 PASS=0
 FAIL=0

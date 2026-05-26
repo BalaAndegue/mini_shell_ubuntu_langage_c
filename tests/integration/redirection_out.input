@@ -1,0 +1,2 @@
+echo hello > /tmp/ms_test_redir.txt
+cat /tmp/ms_test_redir.txt

@@ -1,0 +1,2 @@
+export GREETING=hello
+echo $GREETING world
