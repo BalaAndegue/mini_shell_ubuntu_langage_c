@@ -32,8 +32,7 @@ static const t_builtin_entry builtins_table[] = {
 
 static int dispatch_cd(char **argv, int argc, t_shell *sh)
 {
-    (void)sh;
-    return builtin_cd(argv, argc);
+    return builtin_cd(argv, argc, sh);
 }
 
 static int dispatch_exit(char **argv, int argc, t_shell *sh)
@@ -86,15 +85,37 @@ int exec_builtin(char **argv, int argc, t_shell *sh)
     return 127;
 }
 
-int builtin_cd(char **argv, int argc)
+int builtin_cd(char **argv, int argc, t_shell *sh)
 {
-    if (argc < 2) {
-        fprintf(stderr, "cd: missing operand\n");
-        return 1;
+    const char *target;
+    char        oldpwd[4096] = "";
+
+    getcwd(oldpwd, sizeof(oldpwd));
+
+    if (argc < 2 || strcmp(argv[1], "~") == 0) {
+        target = env_get(sh->env, "HOME");
+        if (!target) target = getenv("HOME");
+        if (!target) { fprintf(stderr, "cd: HOME not set\n"); return 1; }
+    } else if (strcmp(argv[1], "-") == 0) {
+        target = env_get(sh->env, "OLDPWD");
+        if (!target) { fprintf(stderr, "cd: OLDPWD not set\n"); return 1; }
+        puts(target);
+    } else {
+        target = argv[1];
     }
-    if (chdir(argv[1]) != 0) {
+
+    if (chdir(target) != 0) {
         perror("cd");
         return 1;
+    }
+
+    char newpwd[4096];
+    if (getcwd(newpwd, sizeof(newpwd)) == NULL)
+        return 0;
+
+    if (sh->env) {
+        env_set(&sh->env, "OLDPWD", oldpwd[0] ? oldpwd : "");
+        env_set(&sh->env, "PWD",    newpwd);
     }
     return 0;
 }

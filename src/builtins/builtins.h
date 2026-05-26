@@ -3,7 +3,7 @@
 
 #include "../../include/minishell.h"
 
-int builtin_cd(char **argv, int argc);
+int builtin_cd(char **argv, int argc, t_shell *sh);
 int builtin_exit(char **argv, int argc, t_shell *sh);
 int builtin_echo(char **argv, int argc);
 int builtin_pwd(char **argv, int argc);
