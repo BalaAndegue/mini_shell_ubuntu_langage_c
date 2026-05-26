@@ -11,6 +11,7 @@
 #include "../lexer/lexer.h"
 #include "../parser/parser.h"
 #include "../executor/executor.h"
+#include "../executor/pipeline.h"
 #include "../expand/expand.h"
 
 static char *read_line(t_shell *sh, int interactive)
@@ -69,8 +70,7 @@ void shell_run(t_shell *sh)
             }
         }
 
-        /* single command (no pipeline yet — pipeline in next commit) */
-        sh->last_status = execute_cmd(cmds, sh);
+        sh->last_status = execute_pipeline(cmds, sh);
 
         cmd_free(cmds);
     }
