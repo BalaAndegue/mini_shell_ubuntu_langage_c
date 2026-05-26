@@ -6,6 +6,7 @@
 #include "executor.h"
 #include "redir.h"
 #include "../builtins/builtins.h"
+#include "../core/signals.h"
 
 static int cmd_count(t_cmd *cmds)
 {
@@ -76,6 +77,7 @@ int execute_pipeline(t_cmd *cmds, t_shell *sh)
             continue;
         }
         if (pid == 0) {
+            signals_child();
             /* wire stdin from previous pipe */
             if (idx > 0) {
                 dup2(pipes[idx - 1][0], STDIN_FILENO);

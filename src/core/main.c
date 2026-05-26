@@ -1,11 +1,14 @@
 #include <stdlib.h>
 #include "shell.h"
+#include "signals.h"
 #include "../../include/minishell.h"
 
 extern char **environ;
 
 int main(void)
 {
+    signals_init();
+
     t_shell sh = {
         .prompt      = SHELL_NAME "$ ",
         .last_status = 0,

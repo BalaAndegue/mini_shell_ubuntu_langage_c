@@ -7,6 +7,7 @@
 #include "executor.h"
 #include "redir.h"
 #include "../builtins/builtins.h"
+#include "../core/signals.h"
 
 static int wait_child(pid_t pid)
 {
@@ -31,6 +32,7 @@ static int run_external(char **argv, int argc, t_shell *sh, t_redir *redirs)
         return 1;
     }
     if (pid == 0) {
+        signals_child();
         if (redirs && apply_redirs(redirs) < 0)
             exit(1);
         execve(argv[0], argv, sh->env);
