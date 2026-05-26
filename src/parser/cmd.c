@@ -22,6 +22,7 @@ static void redir_free(t_redir *r)
 {
     while (r) {
         t_redir *next = r->next;
+        free(r->file);
         free(r);
         r = next;
     }
@@ -32,7 +33,11 @@ void cmd_free(t_cmd *cmd)
     while (cmd) {
         t_cmd *next = cmd->next;
         redir_free(cmd->redirs);
-        free(cmd->argv);
+        if (cmd->argv) {
+            for (int i = 0; i < cmd->argc; i++)
+                free(cmd->argv[i]);
+            free(cmd->argv);
+        }
         free(cmd);
         cmd = next;
     }

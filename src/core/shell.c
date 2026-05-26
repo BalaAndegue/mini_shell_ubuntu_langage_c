@@ -9,6 +9,7 @@
 
 #include "shell.h"
 #include "../lexer/lexer.h"
+#include "../parser/parser.h"
 #include "../executor/executor.h"
 #include "../expand/expand.h"
 
@@ -41,8 +42,7 @@ static char *read_line(t_shell *sh, int interactive)
 
 void shell_run(t_shell *sh)
 {
-    char *argv[MAX_ARGS + 1];
-    int   interactive = isatty(STDIN_FILENO);
+    int interactive = isatty(STDIN_FILENO);
 
     while (sh->running) {
         char *line = read_line(sh, interactive);
@@ -52,22 +52,26 @@ void shell_run(t_shell *sh)
             break;
         }
 
-        int argc = tokenize(line, argv, MAX_ARGS);
-        if (argc == 0) {
-            free(line);
+        t_cmd *cmds = parse_line(line);
+        free(line);
+
+        if (!cmds)
             continue;
+
+        /* expand $VAR, $?, $$ — replace each argv[i] in-place (free old) */
+        for (t_cmd *c = cmds; c; c = c->next) {
+            for (int i = 0; i < c->argc; i++) {
+                char *ex = expand_token(c->argv[i], sh);
+                if (ex) {
+                    free(c->argv[i]);
+                    c->argv[i] = ex;
+                }
+            }
         }
 
-        /* expand $VAR, $?, $$ in every token before execution */
-        char *expanded[MAX_ARGS + 1];
-        for (int i = 0; i < argc; i++)
-            expanded[i] = expand_token(argv[i], sh);
-        expanded[argc] = NULL;
+        /* single command (no pipeline yet — pipeline in next commit) */
+        sh->last_status = execute_cmd(cmds, sh);
 
-        sh->last_status = execute(expanded, argc, sh);
-
-        for (int i = 0; i < argc; i++)
-            free(expanded[i]);
-        free(line);
+        cmd_free(cmds);
     }
 }

@@ -117,11 +117,23 @@ static char **lex(char *line, int *ntok)
  * Build t_cmd list from token array
  * ---------------------------------------------------------------------- */
 
+static void pending_redirs_free(t_redir *r)
+{
+    while (r) {
+        t_redir *next = r->next;
+        free(r->file);
+        free(r);
+        r = next;
+    }
+}
+
 static t_cmd *build_cmds(char **toks, int ntok)
 {
-    t_cmd    *head    = NULL;
-    t_cmd    *cur     = NULL;
-    t_tokarr  argv    = {0};
+    t_cmd    *head       = NULL;
+    t_cmd   **tail       = &head;
+    t_tokarr  argv       = {0};
+    t_redir  *redirs     = NULL;
+    t_redir **redir_tail = &redirs;
 
     for (int i = 0; i <= ntok; i++) {
         int at_pipe = (i < ntok && strcmp(toks[i], "|") == 0);
@@ -132,17 +144,17 @@ static t_cmd *build_cmds(char **toks, int ntok)
             if (!cmd)
                 goto fail;
 
-            /* finalise argv */
             tokarr_push(&argv, NULL);
-            cmd->argv = argv.tokens;
-            cmd->argc = argv.count - 1;
-            argv = (t_tokarr){0};
+            cmd->argv   = argv.tokens;
+            cmd->argc   = argv.count - 1;
+            cmd->redirs = redirs;
 
-            if (!head)
-                head = cmd;
-            if (cur)
-                cur->next = cmd;
-            cur = cmd;
+            argv       = (t_tokarr){0};
+            redirs     = NULL;
+            redir_tail = &redirs;
+
+            *tail = cmd;
+            tail  = &cmd->next;
             continue;
         }
 
@@ -152,31 +164,17 @@ static t_cmd *build_cmds(char **toks, int ntok)
                 fprintf(stderr, "minishell: parse error near '%s'\n", toks[i]);
                 goto fail;
             }
-            t_redir *r = redir_new(rtype, toks[i + 1]);
+            t_redir *r = redir_new(rtype, strdup(toks[i + 1]));
             if (!r)
                 goto fail;
-            /* attach redir to current (or next) cmd — we'll attach lazily */
-            /* store in a temporary: flush pending argv first */
-            /* simplification: attach to cur after it's created            */
-            /* we do a two-pass — push redir marker tokens, resolve later  */
-            /* Actually: build cur eagerly up to this point */
-            if (cur && r) {
-                t_redir **tail = &cur->redirs;
-                while (*tail)
-                    tail = &(*tail)->next;
-                *tail = r;
-            } else {
-                /* no cmd yet: defer — create empty cmd */
-                t_cmd *cmd = cmd_new();
-                if (!cmd) { free(r); goto fail; }
-                cmd->redirs = r;
-                if (!head) head = cmd;
-                if (cur) cur->next = cmd;
-                cur = cmd;
-            }
-            i++; /* consume filename token */
+            *redir_tail = r;
+            redir_tail  = &r->next;
+            i++;
         } else {
-            tokarr_push(&argv, toks[i]);
+            char *dup = strdup(toks[i]);
+            if (!dup)
+                goto fail;
+            tokarr_push(&argv, dup);
         }
     }
     return head;
@@ -184,6 +182,7 @@ static t_cmd *build_cmds(char **toks, int ntok)
 fail:
     cmd_free(head);
     free(argv.tokens);
+    pending_redirs_free(redirs);
     return NULL;
 }
 
