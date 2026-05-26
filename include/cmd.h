@@ -13,6 +13,7 @@ typedef enum e_redir_type {
 typedef struct s_redir {
     t_redir_type    type;
     char           *file;
+    int             fd;    /* heredoc: read-end of pre-filled pipe (-1 if N/A) */
     struct s_redir *next;
 } t_redir;
 
