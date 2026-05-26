@@ -39,22 +39,23 @@ static void history_save(void)
 
 static char *read_line(t_shell *sh, int interactive)
 {
+    char *prompt = interactive ? prompt_build(sh) : NULL;
+
 #ifdef HAVE_READLINE
     if (interactive) {
-        char *line = readline(sh->prompt);
+        char *line = readline(prompt ? prompt : sh->prompt);
+        free(prompt);
         if (line && *line)
             add_history(line);
         return line;
     }
-#else
-    (void)sh;
 #endif
     char *buf = malloc(BUFF_SIZE);
-    if (!buf)
-        return NULL;
+    if (!buf) { free(prompt); return NULL; }
     if (interactive) {
-        printf("%s", sh->prompt);
+        printf("%s", prompt ? prompt : sh->prompt);
         fflush(stdout);
+        free(prompt);
     }
     if (!fgets(buf, BUFF_SIZE, stdin)) {
         free(buf);
