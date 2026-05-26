@@ -10,6 +10,7 @@
 #include "shell.h"
 #include "../lexer/lexer.h"
 #include "../executor/executor.h"
+#include "../expand/expand.h"
 
 static char *read_line(t_shell *sh, int interactive)
 {
@@ -57,7 +58,16 @@ void shell_run(t_shell *sh)
             continue;
         }
 
-        sh->last_status = execute(argv, argc, sh);
+        /* expand $VAR, $?, $$ in every token before execution */
+        char *expanded[MAX_ARGS + 1];
+        for (int i = 0; i < argc; i++)
+            expanded[i] = expand_token(argv[i], sh);
+        expanded[argc] = NULL;
+
+        sh->last_status = execute(expanded, argc, sh);
+
+        for (int i = 0; i < argc; i++)
+            free(expanded[i]);
         free(line);
     }
 }
